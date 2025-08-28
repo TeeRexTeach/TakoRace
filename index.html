@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Fish Chase Game</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      display: flex;
+      height: 100vh;
+    }
+    #settingsMenu {
+      width: 220px;
+      background: #f0f0f0;
+      border-right: 2px solid #ccc;
+      padding: 10px;
+      transition: width 0.3s;
+      overflow: hidden;
+    }
+    #settingsMenu.collapsed {
+      width: 40px;
+    }
+    #toggleMenu {
+      display: block;
+      margin-bottom: 10px;
+      cursor: pointer;
+    }
+    #gameContainer {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+    #gameArea {
+      width: 80%;
+      height: 150px;
+      border: 2px solid black;
+      margin: 20px;
+      position: relative;
+      background: #e0f7fa;
+    }
+    #lane {
+      position: relative;
+      width: 100%;
+      height: 100%;
+    }
+    .entity {
+      position: absolute;
+      bottom: 20px;
+      font-size: 60px;
+      transition: left 0.3s linear;
+    }
+    #controls {
+      margin: 10px;
+    }
+    #message {
+      position: absolute;
+      top: 40%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(255,255,255,0.9);
+      padding: 20px;
+      border: 2px solid black;
+      display: none;
+      font-size: 24px;
+      font-weight: bold;
+    }
+    #status {
+      margin-top: 10px;
+      font-size: 18px;
+    }
+  </style>
+</head>
+<body>
+  <div id="settingsMenu">
+    <button id="toggleMenu">☰</button>
+    <div id="settingsContent">
+      <h3>Settings</h3>
+      <label>Monster Speed (x sec): <input type="number" id="xInput" value="2" step="0.1"></label><br><br>
+      <label>Steps to Win (y): <input type="number" id="yInput" value="20"></label><br><br>
+      <label>Acceleration (a): <input type="number" id="aInput" value="0.2" step="0.1"></label><br><br>
+      <label>Start Delay (b sec): <input type="number" id="bInput" value="2"></label><br>
+    </div>
+  </div>
+
+  <div id="gameContainer">
+    <div id="gameArea">
+      <div id="lane">
+        <div id="monster" class="entity">👹</div>
+        <div id="fish" class="entity">🐟</div>
+      </div>
+      <div id="message"></div>
+    </div>
+    <div id="controls">
+      <button id="startBtn">Start Round</button>
+      <button id="moveFishBtn" disabled>Move Fish</button>
+    </div>
+    <div id="status"></div>
+  </div>
+
+  <script>
+    let x, y, a, b;
+    let fishSteps, monsterSteps, targetSteps;
+    let round = 1;
+    let roundActive = false;
+    let monsterTimer;
+
+    const fish = document.getElementById("fish");
+    const monster = document.getElementById("monster");
+    const message = document.getElementById("message");
+    const status = document.getElementById("status");
+
+    function loadSettings() {
+      x = parseFloat(document.getElementById("xInput").value);
+      y = parseInt(document.getElementById("yInput").value);
+      a = parseFloat(document.getElementById("aInput").value);
+      b = parseFloat(document.getElementById("bInput").value);
+      targetSteps = y;
+    }
+
+    function resetPositions() {
+      fishSteps = 0;
+      monsterSteps = -1; // monster starts 1 space behind fish
+      updatePositions();
+    }
+
+    function updatePositions() {
+      const fishPercent = (fishSteps / targetSteps) * 100;
+      const monsterPercent = (monsterSteps / targetSteps) * 100;
+      fish.style.left = `calc(${fishPercent}% - 30px)`;
+      monster.style.left = `calc(${monsterPercent}% - 30px)`;
+    }
+
+    function startRound() {
+      loadSettings();
+      resetPositions();
+      roundActive = true;
+      message.style.display = "none";
+      status.textContent = `Round ${round} started!`;
+
+      document.getElementById("moveFishBtn").disabled = false;
+      document.getElementById("startBtn").disabled = true;
+
+      // Monster delay
+      setTimeout(() => {
+        const interval = Math.max(0.1, x - (round - 1) * a) * 1000;
+        monsterTimer = setInterval(moveMonster, interval);
+      }, b * 1000);
+    }
+
+    function moveFish() {
+      if (!roundActive || fishSteps >= targetSteps) return;
+      fishSteps++;
+      updatePositions();
+
+      let remaining = targetSteps - fishSteps;
+      if (remaining === 5) {
+        status.textContent = `Only ${remaining} more to go!`;
+      }
+      checkRoundEnd();
+    }
+
+    function moveMonster() {
+      if (!roundActive) return;
+      monsterSteps++;
+      updatePositions();
+      checkCaught();
+    }
+
+    function checkRoundEnd() {
+      if (fishSteps >= targetSteps) {
+        roundActive = false;
+        clearInterval(monsterTimer);
+        message.textContent = `🎉 Round ${round} Cleared!`;
+        message.style.display = "block";
+        round++;
+        document.getElementById("startBtn").disabled = false;
+        document.getElementById("moveFishBtn").disabled = true;
+      }
+    }
+
+    function checkCaught() {
+      if (monsterSteps >= fishSteps) {
+        roundActive = false;
+        clearInterval(monsterTimer);
+        message.textContent = `💀 Caught! Game Over on Round ${round}`;
+        message.style.display = "block";
+        document.getElementById("startBtn").disabled = false;
+        document.getElementById("moveFishBtn").disabled = true;
+      }
+    }
+
+    document.getElementById("startBtn").addEventListener("click", startRound);
+    document.getElementById("moveFishBtn").addEventListener("click", moveFish);
+
+    // Collapsible settings menu
+    document.getElementById("toggleMenu").addEventListener("click", () => {
+      document.getElementById("settingsMenu").classList.toggle("collapsed");
+    });
+
+    // Initial
+    loadSettings();
+    resetPositions();
+  </script>
+</body>
+</html>
