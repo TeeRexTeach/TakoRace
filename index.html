@@ -157,7 +157,7 @@
       updatePositions();
 
       let remaining = targetSteps - fishSteps;
-      if (remaining === 5) {
+      if (remaining <= 5 && remaining > 0) {
         status.textContent = `Only ${remaining} more to go!`;
       }
       checkRoundEnd();
